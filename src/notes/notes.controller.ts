@@ -9,6 +9,7 @@ import {
 } from '@nestjs/common';
 import { NotesDto } from './notes.dto/notes.dto';
 import { NotesService } from './notes.service';
+import { notesSchema } from './notes.schema';
 
 @Controller('notes')
 export class NotesController {
@@ -26,6 +27,11 @@ export class NotesController {
 
   @Post()
   async create(@Body() dto: NotesDto) {
+    try {
+      notesSchema.validateSync(dto, { abortEarly: false, strict: true });
+    } catch (error) {
+      return { error: error.message };
+    }
     return this.notesService.create(dto);
   }
 
@@ -36,7 +42,12 @@ export class NotesController {
 
   @Patch(':id')
   async updateNote(@Param('id') id: string, @Body() dto: NotesDto) {
-    return this.notesService.updateNote(id, dto);
+    try {
+      notesSchema.validateSync(dto, { abortEarly: false, strict: true });
+    } catch (error) {
+      return { error: error.message };
+    }
+    return this.notesService.create(dto);
   }
 
   @Delete(':id')
