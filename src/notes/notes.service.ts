@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { NotesDto } from './notes.dto/notes.dto';
+import { notesSchema } from './notes.dto/notes.dto';
 import { InjectModel } from '@nestjs/sequelize';
 import { Note } from './notes.model';
 
@@ -32,28 +32,61 @@ export class NotesService {
     return categoriesData;
   }
 
-  async addNote(noteData: Partial<Note>): Promise<Note> {
+  async addNote(noteData: Partial<Note>): Promise<Note | { error: string }> {
+    const note = await this.notesModel.findByPk(Number(noteData.id));
+    try {
+      if (note) {
+        throw new NotFoundException(
+          `Note with ID ${noteData.id} already exist`,
+        );
+      }
+      notesSchema.validateSync(noteData, { abortEarly: false, strict: true });
+    } catch (error) {
+      if (error instanceof NotFoundException) return { error: error.message };
+      return { error: error.errors };
+    }
     return this.notesModel.create(noteData);
   }
 
-  async getNoteById(id: string): Promise<Note | null> {
+  async getNoteById(id: string): Promise<Note | { error: string }> {
     const note = await this.notesModel.findByPk(Number(id));
-
-    if (!note) {
-      throw new NotFoundException(`Note with ID ${id} not found`);
+    try {
+      if (!note) throw new NotFoundException(`Note with ID ${id} not found`);
+    } catch (error) {
+      return { error: error.message };
     }
-
     return note;
   }
 
-  // async updateNote(id: string, dto: NotesDto) {
-  //   return this.notes.map((note) => {
-  //     if (note.id === Number(id)) return { ...note, ...dto };
-  //     return note;
-  //   });
-  // }
+  async updateNote(
+    id: string,
+    noteData: Partial<Note>,
+  ): Promise<Note | { error: string }> {
+    const note = await this.notesModel.findByPk(Number(id));
+    try {
+      if (!note) {
+        throw new NotFoundException(`Note with ID ${id} not found`);
+      }
+      notesSchema.validateSync(noteData, { abortEarly: false, strict: true });
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        return { error: error.message };
+      }
+      return { error: error.errors };
+    }
+    return note.update(noteData);
+  }
 
-  // async deleteNote(id: string) {
-  //   return this.notes.filter((note) => note.id !== Number(id));
-  // }
+  async deleteNote(id: string): Promise<Note | { error: string }> {
+    const note = await this.notesModel.findByPk(Number(id));
+    try {
+      if (!note) {
+        throw new NotFoundException(`Note with ID ${id} not found`);
+      }
+    } catch (error) {
+      return { error: error.message };
+    }
+    await this.notesModel.destroy({ where: { id: Number(id) } });
+    return note;
+  }
 }

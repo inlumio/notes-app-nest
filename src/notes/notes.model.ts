@@ -1,12 +1,4 @@
-import {
-  BeforeCreate,
-  BeforeUpdate,
-  Column,
-  DataType,
-  Model,
-  PrimaryKey,
-  Table,
-} from 'sequelize-typescript';
+import { Column, Model, PrimaryKey, Table } from 'sequelize-typescript';
 
 @Table({ timestamps: false })
 export class Note extends Model {
@@ -29,14 +21,6 @@ export class Note extends Model {
   @Column({ defaultValue: false })
   archived: boolean;
 
-  @Column({ type: DataType.ARRAY(DataType.DATE), allowNull: true })
-  dates: Date[];
-
-  @BeforeCreate
-  @BeforeUpdate
-  static stringifyDates(instance: Note) {
-    if (instance.dates && Array.isArray(instance.dates)) {
-      instance.setDataValue('dates', JSON.stringify(instance.dates));
-    }
-  }
+  @Column({ defaultValue: '' })
+  dates: string;
 }
